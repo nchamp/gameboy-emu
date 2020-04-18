@@ -23,6 +23,18 @@ func (reg *Registers) set_bc(value uint16) {
 	reg.c = uint8((value & 0xFF))
 }
 
+func (reg *Registers) get_hl() uint16 {
+	h := uint16(reg.h) << 8
+	l := uint16(reg.l)
+
+	return h | l
+}
+
+func (reg *Registers) set_hl(value uint16) {
+	reg.h = uint8((value & 0xFF00) >> 8)
+	reg.l = uint8((value & 0xFF))
+}
+
 // 'f' register is a special register
 // The lower four bits are ALWAYS 0s when certain events occur
 // The CPU flags certain states. Let's model these:
