@@ -1,8 +1,9 @@
 package gameboy
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAdd8(t *testing.T) {

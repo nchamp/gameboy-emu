@@ -14,12 +14,12 @@ const (
 type ArithmeticTarget int
 
 const (
-	A ArithmeticTarget = iota
-	B ArithmeticTarget = iota
-	C ArithmeticTarget = iota
-	E ArithmeticTarget = iota
-	H ArithmeticTarget = iota
-	L ArithmeticTarget = iota
+	A  ArithmeticTarget = iota
+	B  ArithmeticTarget = iota
+	C  ArithmeticTarget = iota
+	E  ArithmeticTarget = iota
+	H  ArithmeticTarget = iota
+	L  ArithmeticTarget = iota
 	HL ArithmeticTarget = iota
 )
 
@@ -68,7 +68,6 @@ func (cpu *CPU) execute(instruction Instruction, target ArithmeticTarget) {
 	}
 	// todo: Support more instructions
 }
-
 
 // go allows integer overflow for performance sake, we need to manually detect it
 func Add8(left uint8, right uint8) (uint8, bool) {

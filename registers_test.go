@@ -1,8 +1,9 @@
 package gameboy
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGet_bc(t *testing.T) {
@@ -28,8 +29,8 @@ func TestBool_to_int(t *testing.T) {
 }
 
 func TestByte_to_bool(t *testing.T) {
-	assert.Equal(t, false, byte_to_bool(1,1), "they should match")
-	assert.Equal(t, true, byte_to_bool(1,0), "they should match")
+	assert.Equal(t, false, byte_to_bool(1, 1), "they should match")
+	assert.Equal(t, true, byte_to_bool(1, 0), "they should match")
 }
 
 // TODO: to_flagregister && to_uint8
