@@ -9,17 +9,20 @@ type Instruction ArithmeticTarget
 const (
 	ADD   Instruction = iota
 	ADDHL Instruction = iota
+	ADC   Instruction = iota
 )
 
 type ArithmeticTarget int
 
 const (
-	A  ArithmeticTarget = iota
-	B  ArithmeticTarget = iota
-	C  ArithmeticTarget = iota
-	E  ArithmeticTarget = iota
-	H  ArithmeticTarget = iota
-	L  ArithmeticTarget = iota
+	// 8bit targets (single register)
+	A ArithmeticTarget = iota
+	B ArithmeticTarget = iota
+	C ArithmeticTarget = iota
+	E ArithmeticTarget = iota
+	H ArithmeticTarget = iota
+	L ArithmeticTarget = iota
+	// 16bit targets (multiple registers)
 	HL ArithmeticTarget = iota
 )
 
@@ -65,12 +68,15 @@ func (cpu *CPU) execute(instruction Instruction, target ArithmeticTarget) {
 	case ADDHL:
 		value := cpu.get_target_virtual_16bit_arithmetic_value(target)
 		cpu.registers.set_hl(cpu.addhl(value))
+	case ADC:
+		value := cpu.get_target_arithmetic_value(target)
+		cpu.registers.a = cpu.adc(value)
 	}
 	// todo: Support more instructions
 }
 
 // go allows integer overflow for performance sake, we need to manually detect it
-func Add8(left uint8, right uint8) (uint8, bool) {
+func add8(left uint8, right uint8) (uint8, bool) {
 	overflow := false
 
 	if right > 0 && left > math.MaxInt8-right {
@@ -91,7 +97,7 @@ func add16(left uint16, right uint16) (uint16, bool) {
 }
 
 func (cpu *CPU) add(value uint8) uint8 {
-	new_value, is_overflow := Add8(cpu.registers.a, value)
+	new_value, is_overflow := add8(cpu.registers.a, value)
 
 	cpu.registers.f.zero = new_value == 0
 	cpu.registers.f.subtract = false
@@ -109,7 +115,24 @@ func (cpu *CPU) addhl(value uint16) uint16 {
 	cpu.registers.f.subtract = false
 	cpu.registers.f.carry = is_overflow
 
-	// TODO: Implment flow over check @ 11th bit
+	// test if we flow over 11th bit. does adding the two numbers cause the 11th bit to flip?
+	mask := uint16(0b111_1111_1111) // mask out bits 11-15
+	cpu.registers.f.half_carry = (value&mask)+(hl&mask) > mask
+
+	return new_value
+}
+
+func (cpu *CPU) adc(value uint8) uint8 {
+	additional := 0
+	if cpu.registers.f.carry {
+		additional = 1
+	}
+
+	to_add, is_overflow := add8(value, uint8(additional))
+
+	new_value := cpu.add(to_add)
+
+	cpu.registers.f.carry = cpu.registers.f.carry || is_overflow
 
 	return new_value
 }

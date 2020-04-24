@@ -11,11 +11,15 @@ type Registers struct {
 	l uint8
 }
 
-func (reg *Registers) get_bc() uint16 {
-	b := uint16(reg.b) << 8
-	c := uint16(reg.c)
+func get_16bit_registers(register_a uint8, register_b uint8) uint16 {
+	a := uint16(register_a) << 8
+	b := uint16(register_b)
 
-	return b | c
+	return a | b
+}
+
+func (reg *Registers) get_bc() uint16 {
+	return get_16bit_registers(reg.b, reg.c)
 }
 
 func (reg *Registers) set_bc(value uint16) {
@@ -24,10 +28,7 @@ func (reg *Registers) set_bc(value uint16) {
 }
 
 func (reg *Registers) get_hl() uint16 {
-	h := uint16(reg.h) << 8
-	l := uint16(reg.l)
-
-	return h | l
+	return get_16bit_registers(reg.h, reg.l)
 }
 
 func (reg *Registers) set_hl(value uint16) {
