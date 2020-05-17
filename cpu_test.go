@@ -224,3 +224,5 @@ func TestCompare(t *testing.T) {
 
 	assert.Equal(t, expected_registers, cpu.registers, "register state should be as expected")
 }
+
+// TODO: Add tests for: INC, DEC and CCF

@@ -16,6 +16,9 @@ const (
 	OR    Instruction = iota
 	XOR   Instruction = iota
 	CP    Instruction = iota
+	INC   Instruction = iota
+	DEC   Instruction = iota
+	CCF   Instruction = iota
 )
 
 type ArithmeticTarget int
@@ -30,6 +33,7 @@ const (
 	L ArithmeticTarget = iota
 	// 16bit targets (multiple registers)
 	HL ArithmeticTarget = iota
+	BC ArithmeticTarget = iota
 )
 
 type CPU struct {
@@ -56,6 +60,23 @@ func (cpu *CPU) get_target_arithmetic_value(target ArithmeticTarget) uint8 {
 	return 0
 }
 
+func (cpu *CPU) set_target_arithmetic_value(target ArithmeticTarget, value uint8) {
+	switch target {
+	case A:
+		cpu.registers.a = value
+	case B:
+		cpu.registers.b = value
+	case C:
+		cpu.registers.c = value
+	case E:
+		cpu.registers.e = value
+	case H:
+		cpu.registers.h = value
+	case L:
+		cpu.registers.l = value
+	}
+}
+
 func (cpu *CPU) get_target_virtual_16bit_arithmetic_value(target ArithmeticTarget) uint16 {
 	switch target {
 	case HL:
@@ -66,7 +87,17 @@ func (cpu *CPU) get_target_virtual_16bit_arithmetic_value(target ArithmeticTarge
 	return 0
 }
 
-func (cpu *CPU) execute8(instruction Instruction, value uint8) {
+func (cpu *CPU) set_target_virtual_16bit_arithmetic_value(target ArithmeticTarget, value uint16) {
+	switch target {
+	case BC:
+		cpu.registers.set_bc(value)
+	case HL:
+		cpu.registers.set_hl(value)
+	}
+}
+
+func (cpu *CPU) execute8(instruction Instruction, target ArithmeticTarget) {
+	value := cpu.get_target_arithmetic_value(target)
 	switch instruction {
 	case ADD:
 		cpu.registers.a = cpu.add(value)
@@ -84,14 +115,25 @@ func (cpu *CPU) execute8(instruction Instruction, value uint8) {
 		cpu.registers.a = cpu.xor(value)
 	case CP:
 		cpu.compare(value)
+	case INC:
+		cpu.set_target_arithmetic_value(target, cpu.increment(value))
+	case DEC:
+		cpu.set_target_arithmetic_value(target, cpu.decrement(value))
+	case CCF:
+		cpu.complement_carry_flag()
 	}
 	// todo: Support more instructions
 }
 
-func (cpu *CPU) execute16(instruction Instruction, value uint16) {
+func (cpu *CPU) execute16(instruction Instruction, target ArithmeticTarget) {
+	value := cpu.get_target_virtual_16bit_arithmetic_value(target)
 	switch instruction {
 	case ADDHL:
 		cpu.registers.set_hl(cpu.addhl(value))
+	case INC:
+		cpu.set_target_virtual_16bit_arithmetic_value(target, value+1) //overflow add is fine here, no need to set registers
+	case DEC:
+		cpu.set_target_virtual_16bit_arithmetic_value(target, value-1)
 	}
 }
 
@@ -103,9 +145,9 @@ func (cpu *CPU) execute(instruction Instruction, target ArithmeticTarget) {
 	case E:
 	case H:
 	case L:
-		cpu.execute8(instruction, cpu.get_target_arithmetic_value(target))
+		cpu.execute8(instruction, target)
 	case HL:
-		cpu.execute16(instruction, cpu.get_target_virtual_16bit_arithmetic_value(target))
+		cpu.execute16(instruction, target)
 	}
 }
 
@@ -242,4 +284,31 @@ func (cpu *CPU) compare(value uint8) {
 	cpu.registers.f.subtract = true // compare is considered a subtraction
 	cpu.registers.f.carry = cpu.registers.a < value
 	cpu.registers.f.half_carry = (cpu.registers.a & 0xF) < (value & 0xF)
+}
+
+func (cpu *CPU) increment(value uint8) uint8 {
+	new_value, is_overflow := add8(value, 1)
+	cpu.registers.f.zero = new_value == 0
+	cpu.registers.f.subtract = false
+	cpu.registers.f.carry = is_overflow
+
+	cpu.registers.f.half_carry = (cpu.registers.a&0xF)+(value&0xF) > 0xF
+	return new_value
+}
+
+func (cpu *CPU) decrement(value uint8) uint8 {
+	new_value, is_overflow := sub8(value, 1)
+
+	cpu.registers.f.zero = new_value == 0
+	cpu.registers.f.subtract = true
+	cpu.registers.f.carry = is_overflow
+
+	cpu.registers.f.half_carry = (cpu.registers.a & 0xF) < (value & 0xF)
+	return new_value
+}
+
+func (cpu *CPU) complement_carry_flag() {
+	cpu.registers.f.subtract = false
+	cpu.registers.f.half_carry = false
+	cpu.registers.f.carry = !cpu.registers.f.carry
 }
